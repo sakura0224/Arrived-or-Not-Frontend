@@ -1,16 +1,12 @@
-# roll
+# 到没到
 
-A new Flutter project.
+flutter开发的一款拍照识别系统
+上海大学大创项目
 
-## Getting Started
+## 参与开发
 
-This project is a starting point for a Flutter application.
+git clone项目到本地，使用命令
 
-A few resources to get you started if this is your first Flutter project:
+`git clone https://github.com/sakura0224/daomeidao.git`
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+然后进入项目目录,开始开发
