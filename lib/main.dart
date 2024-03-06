@@ -1,7 +1,6 @@
 // 导入相关的包
 import 'dart:io';
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -10,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'global_config.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:path_provider/path_provider.dart';
 
 // 程序入口
 void main() async {
@@ -104,27 +104,30 @@ class CameraPageState extends State<CameraPage> {
       var response = await request.send();
 
       if (response.statusCode == 200) {
-        response.stream.transform(utf8.decoder).listen((value) {
+        response.stream.transform(utf8.decoder).listen((value) async {
           Map<String, dynamic> result = jsonDecode(value);
-          if (result['image'] != null) {
-            Uint8List bytes = base64Decode(result['image']);
-            // 假设服务器返回的数据是有效的
-            bool shouldAddRecord = result['image'] != null;
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => NewPage(
-                  image: bytes,
-                  text: result['size'] != null
-                      ? result['size'].toString()
-                      : '未知尺寸',
-                  shouldAddRecord: shouldAddRecord, // 传递这个标志
+          if (result['imageUrl'] != null) {
+            var imageResponse = await http.get(Uri.parse(result['imageUrl']));
+            var documentsDirectory = await getApplicationDocumentsDirectory();
+            var filePath = '${documentsDirectory.path}/image.jpg';
+            await File(filePath).writeAsBytes(imageResponse.bodyBytes);
+            if (context.mounted) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => NewPage(
+                    imagePath: filePath,
+                    text: result['size'] != null
+                        ? result['size'].toString()
+                        : '未知尺寸',
+                    shouldAddRecord: true,
+                  ),
                 ),
-              ),
-            );
-          } else {
-            scaffoldMessenger
-                .showSnackBar(const SnackBar(content: Text('服务器返回的数据不完整')));
+              );
+            } else {
+              scaffoldMessenger
+                  .showSnackBar(const SnackBar(content: Text('服务器返回的数据不完整')));
+            }
           }
         });
       } else {
@@ -201,13 +204,13 @@ class CameraPageState extends State<CameraPage> {
 
 // 识别弹出的页面
 class NewPage extends StatefulWidget {
-  final Uint8List image;
+  final String imagePath;
   final String text;
   final bool shouldAddRecord; // 添加这个参数
 
   const NewPage(
       {super.key,
-      required this.image,
+      required this.imagePath,
       required this.text,
       this.shouldAddRecord = false});
 
@@ -229,7 +232,7 @@ class NewPageState extends State<NewPage> {
     final prefs = await SharedPreferences.getInstance();
     List<String> records = prefs.getStringList('records') ?? [];
     String now = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
-    records.add('${base64Encode(widget.image)}|${widget.text}|$now');
+    records.add('${widget.imagePath}|${widget.text}|$now'); // 保存图片的本地路径
     await prefs.setStringList('records', records);
   }
 
@@ -241,7 +244,7 @@ class NewPageState extends State<NewPage> {
       ),
       body: Column(
         children: <Widget>[
-          Image.memory(widget.image),
+          Image.file(File(widget.imagePath)),
           Text(widget.text),
         ],
       ),
@@ -259,6 +262,7 @@ class HistoryPage extends StatefulWidget {
 
 class HistoryPageState extends State<HistoryPage> {
   List<String> records = [];
+  String? record;
 
   @override
   void initState() {
@@ -268,42 +272,43 @@ class HistoryPageState extends State<HistoryPage> {
 
   void loadRecords() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      records = prefs.getStringList('records') ?? [];
-    });
+    records = prefs.getStringList('records') ?? [];
+    if (records.isNotEmpty) {
+      record = records.first; // 初始化record
+    }
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      itemCount: records.length,
-      itemBuilder: (context, index) {
-        List<String> parts = records[index].split('|');
-        if (parts.length < 3) {
-          return const ListTile(
-            title: Text('记录不完整'),
-          );
-        }
-        Uint8List image = base64Decode(parts[0]);
-        String text = parts[1];
-        String time = parts[2];
-        return ListTile(
-          leading: Image.memory(image, width: 50, height: 50),
-          title: Text(time),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => NewPage(
-                  key: UniqueKey(),
-                  image: image,
-                  text: text,
-                ),
-              ),
-            );
-          },
+    if (record == null) {
+      // 如果record为null，返回一个空的Container
+      return Container();
+    }
+    final parts = record!.split('|');
+    if (parts.length < 3) {
+      // 如果parts数组的长度小于3，返回一个空的Container
+      return Container();
+    }
+    final imagePath = parts[0]; // 这里是图片的本地路径
+    final size = parts[1];
+    final time = parts[2];
+
+    return ListTile(
+      leading: Image.file(File(imagePath)), // 使用Image.file来加载图片
+      title: Text(size),
+      subtitle: Text(time),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => NewPage(
+              imagePath: imagePath,
+              text: size,
+            ),
+          ),
         );
-      },
+      }
     );
   }
 }
