@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'global_config.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
 // 程序入口
 void main() async {
@@ -80,8 +81,6 @@ class CameraPage extends StatefulWidget {
 }
 
 class CameraPageState extends State<CameraPage> {
-  bool _isUploading = false;
-
   Future<void> getImage(ImageNotifier imageNotifier) async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.camera);
@@ -93,12 +92,6 @@ class CameraPageState extends State<CameraPage> {
 
 // 上传图片
   Future<void> uploadImage(String imagePath, BuildContext context) async {
-    if (_isUploading) return;
-
-    setState(() {
-      _isUploading = true;
-    });
-
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     try {
       var uri = Uri.parse(
@@ -120,13 +113,16 @@ class CameraPageState extends State<CameraPage> {
               MaterialPageRoute(
                 builder: (context) => NewPage(
                   image: bytes,
-                  text: result['size'] != null ? result['size'].toString() : '未知尺寸',
+                  text: result['size'] != null
+                      ? result['size'].toString()
+                      : '未知尺寸',
                   shouldAddRecord: shouldAddRecord, // 传递这个标志
                 ),
               ),
             );
           } else {
-            scaffoldMessenger.showSnackBar(const SnackBar(content: Text('服务器返回的数据不完整')));
+            scaffoldMessenger
+                .showSnackBar(const SnackBar(content: Text('服务器返回的数据不完整')));
           }
         });
       } else {
@@ -134,10 +130,6 @@ class CameraPageState extends State<CameraPage> {
       }
     } catch (e) {
       scaffoldMessenger.showSnackBar(SnackBar(content: Text('图片上传失败：$e')));
-    } finally {
-      setState(() {
-        _isUploading = false;
-      });
     }
   }
 
@@ -157,39 +149,49 @@ class CameraPageState extends State<CameraPage> {
                         '使用前请先于“我的”——“配置服务端地址”中完成配置',
                         textAlign: TextAlign.center,
                       ),
-                      Text(
-                        '点击拍摄照片，长按进行上传',
-                        textAlign: TextAlign.center,
-                      ),
                     ],
                   ),
                 )
               : Image.file(File(imageNotifier.image!.path));
         },
       ),
-      floatingActionButton: GestureDetector(
-        onLongPress: () async {
-          if (_isUploading) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('图片正在上传中，请稍候...')),
-            );
-            return;
-          }
-          if (imageNotifier.image == null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('请先拍摄照片')),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('正在上传图片...')),
-            );
-            await uploadImage(imageNotifier.image!.path, context);
-          }
-        },
-        child: FloatingActionButton(
-          child: const Icon(Icons.camera),
-          onPressed: () => getImage(imageNotifier),
-        ),
+      floatingActionButton: SpeedDial(
+        animatedIcon: AnimatedIcons.menu_close,
+        children: [
+          SpeedDialChild(
+            child: const Icon(Icons.camera),
+            label: '拍照',
+            onTap: () => getImage(imageNotifier),
+          ),
+          SpeedDialChild(
+            child: const Icon(Icons.folder),
+            label: '相册',
+            onTap: () async {
+              final pickedFile =
+                  await ImagePicker().pickImage(source: ImageSource.gallery);
+              if (pickedFile != null) {
+                // 选择照片后的代码
+                imageNotifier.setImage(pickedFile);
+              }
+            },
+          ),
+          SpeedDialChild(
+            child: const Icon(Icons.cloud_upload),
+            label: '上传',
+            onTap: () async {
+              if (imageNotifier.image == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('请先拍摄照片')),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('正在上传图片...')),
+                );
+                await uploadImage(imageNotifier.image!.path, context);
+              }
+            },
+          ),
+        ],
       ),
     );
   }
@@ -201,7 +203,11 @@ class NewPage extends StatefulWidget {
   final String text;
   final bool shouldAddRecord; // 添加这个参数
 
-  const NewPage({super.key, required this.image, required this.text, this.shouldAddRecord = false});
+  const NewPage(
+      {super.key,
+      required this.image,
+      required this.text,
+      this.shouldAddRecord = false});
 
   @override
   NewPageState createState() => NewPageState();
@@ -211,7 +217,8 @@ class NewPageState extends State<NewPage> {
   @override
   void initState() {
     super.initState();
-    if (widget.shouldAddRecord) { // 根据标志决定是否添加记录
+    if (widget.shouldAddRecord) {
+      // 根据标志决定是否添加记录
       addRecord();
     }
   }
