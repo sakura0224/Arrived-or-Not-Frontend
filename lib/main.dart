@@ -32,7 +32,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: '到没到',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.white,
+        ),
       ),
       home: DefaultTabController(
         length: 3,
@@ -390,6 +392,60 @@ class MyPageState extends State<MyPage> {
             leading: Icon(Icons.settings), // 齿轮图标
             title: Text('配置服务端地址'),
           ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.cleaning_services),
+          title: const Text('清除缓存'),
+          onTap: () {
+            showDialog(
+              context: context,
+              builder: (BuildContext dialogContext) {
+                // 注意这里的变化
+                return AlertDialog(
+                  title: const Text('清除缓存'),
+                  content: const Text('确定要清除所有历史记录吗？'),
+                  actions: <Widget>[
+                    TextButton(
+                      child: const Text('取消'),
+                      onPressed: () {
+                        Navigator.of(dialogContext).pop();
+                      },
+                    ),
+                    TextButton(
+                      child: const Text('确认'),
+                      onPressed: () async {
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.remove('records');
+                        if (context.mounted) {
+                          Navigator.of(dialogContext).pop();
+                          ScaffoldMessenger.of(dialogContext).showSnackBar(
+                            const SnackBar(
+                              content: Text('已清除所有缓存'),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.info),
+          title: const Text('关于'),
+          onTap: () {
+            showAboutDialog(
+              context: context,
+              applicationName: '到没到',
+              applicationVersion: '1.0.1',
+              applicationIcon: const Icon(Icons.camera, size: 45),
+              children: const <Widget>[
+                Text('上海大学大创项目'),
+              ],
+            );
+          },
         ),
       ],
     );
