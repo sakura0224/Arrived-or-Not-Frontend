@@ -444,7 +444,7 @@ class MyPageState extends State<MyPage> {
             showAboutDialog(
               context: context,
               applicationName: '到没到',
-              applicationVersion: '1.0.1',
+              applicationVersion: '1.1.0',
               applicationIcon: const Icon(Icons.camera, size: 45),
               children: const <Widget>[
                 Text('上海大学大创项目'),
