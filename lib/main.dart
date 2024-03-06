@@ -109,8 +109,11 @@ class CameraPageState extends State<CameraPage> {
           if (result['imageUrl'] != null) {
             var imageResponse = await http.get(Uri.parse(result['imageUrl']));
             var documentsDirectory = await getApplicationDocumentsDirectory();
-            var filePath = '${documentsDirectory.path}/image.jpg';
+            var now = DateTime.now().millisecondsSinceEpoch;
+            var filePath = '${documentsDirectory.path}/image_$now.jpg';
             await File(filePath).writeAsBytes(imageResponse.bodyBytes);
+            // 假设服务器返回的数据是有效的
+            bool shouldAddRecord = result['imageUrl'] != null;
             if (context.mounted) {
               Navigator.push(
                 context,
@@ -120,14 +123,14 @@ class CameraPageState extends State<CameraPage> {
                     text: result['size'] != null
                         ? result['size'].toString()
                         : '未知尺寸',
-                    shouldAddRecord: true,
+                    shouldAddRecord: shouldAddRecord,
                   ),
                 ),
               );
-            } else {
-              scaffoldMessenger
-                  .showSnackBar(const SnackBar(content: Text('服务器返回的数据不完整')));
             }
+          } else {
+            scaffoldMessenger
+                .showSnackBar(const SnackBar(content: Text('服务器返回的数据不完整')));
           }
         });
       } else {
@@ -232,8 +235,8 @@ class NewPageState extends State<NewPage> {
     final prefs = await SharedPreferences.getInstance();
     List<String> records = prefs.getStringList('records') ?? [];
     String now = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
-    records.add('${widget.imagePath}|${widget.text}|$now'); // 保存图片的本地路径
-    await prefs.setStringList('records', records);
+    records.add('${widget.imagePath}|${widget.text}|$now'); // 添加新记录
+    await prefs.setStringList('records', records); // 保存更新后的records列表
   }
 
   @override
@@ -272,43 +275,51 @@ class HistoryPageState extends State<HistoryPage> {
 
   void loadRecords() async {
     final prefs = await SharedPreferences.getInstance();
-    records = prefs.getStringList('records') ?? [];
-    if (records.isNotEmpty) {
-      record = records.first; // 初始化record
-    }
-    setState(() {});
+    setState(() {
+      records = prefs.getStringList('records') ?? [];
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (record == null) {
-      // 如果record为null，返回一个空的Container
-      return Container();
-    }
-    final parts = record!.split('|');
-    if (parts.length < 3) {
-      // 如果parts数组的长度小于3，返回一个空的Container
-      return Container();
-    }
-    final imagePath = parts[0]; // 这里是图片的本地路径
-    final size = parts[1];
-    final time = parts[2];
+    return Scaffold(
+      body: records.isEmpty
+          ? const Center(child: Text('没有历史记录'))
+          : ListView.builder(
+              itemCount: records.length,
+              itemBuilder: (context, index) {
+                // 分割每条记录的字符串以获取图片路径和其他信息
+                final parts = records[index].split('|');
+                final imagePath = parts[0];
+                final size = parts.length > 1 ? parts[1] : '未知尺寸';
+                final time = parts[2];
 
-    return ListTile(
-      leading: Image.file(File(imagePath)), // 使用Image.file来加载图片
-      title: Text(size),
-      subtitle: Text(time),
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => NewPage(
-              imagePath: imagePath,
-              text: size,
+                // 确保parts的长度大于等于3
+                if (parts.length < 3) {
+                  return Container(); // 或者一个占位符Widget
+                }
+
+                // 创建列表项
+                return ListTile(
+                  leading: Image.file(File(imagePath)),
+                  title: Text(size),
+                  subtitle: Text(time),
+                  onTap: () {
+                    // 点击跳转到NewPage，并传递图片路径和尺寸
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => NewPage(
+                          imagePath: imagePath,
+                          text: size,
+                          shouldAddRecord: false, // 假设NewPage接受一个标志以决定是否添加记录
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
             ),
-          ),
-        );
-      }
     );
   }
 }
@@ -401,14 +412,14 @@ class MyPageState extends State<MyPage> {
         ListTile(
           leading: const Icon(Icons.cleaning_services),
           title: const Text('清除缓存'),
-          onTap: () {
+          onTap: () async {
+            // 显示确认对话框
             showDialog(
               context: context,
               builder: (BuildContext dialogContext) {
-                // 注意这里的变化
                 return AlertDialog(
                   title: const Text('清除缓存'),
-                  content: const Text('确定要清除所有历史记录吗？'),
+                  content: const Text('确定要清除所有历史记录和缓存吗？'),
                   actions: <Widget>[
                     TextButton(
                       child: const Text('取消'),
@@ -419,14 +430,36 @@ class MyPageState extends State<MyPage> {
                     TextButton(
                       child: const Text('确认'),
                       onPressed: () async {
+                        // 清除SharedPreferences中的记录
                         final prefs = await SharedPreferences.getInstance();
                         await prefs.remove('records');
+
+                        // 获取应用文档目录
+                        final directory =
+                            await getApplicationDocumentsDirectory();
+
+                        // 删除目录中的所有文件
+                        final files = directory.listSync();
+                        for (var file in files) {
+                          try {
+                            if (file is File) {
+                              await file.delete();
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('删除文件时出现错误'),
+                                ),
+                              );
+                            }
+                          }
+                        }
                         if (context.mounted) {
+                          // 关闭对话框并显示提示
                           Navigator.of(dialogContext).pop();
-                          ScaffoldMessenger.of(dialogContext).showSnackBar(
-                            const SnackBar(
-                              content: Text('已清除所有缓存'),
-                            ),
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('已清除所有缓存')),
                           );
                         }
                       },
