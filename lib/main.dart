@@ -127,6 +127,9 @@ class CameraPageState extends State<CameraPage> {
                   ),
                 ),
               );
+            } else {
+              scaffoldMessenger.showSnackBar(
+                  const SnackBar(content: Text('接收失败，请在上传时不要进行任何操作')));
             }
           } else {
             scaffoldMessenger
@@ -193,7 +196,7 @@ class CameraPageState extends State<CameraPage> {
                 );
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('正在上传图片...')),
+                  const SnackBar(content: Text('正在上传图片...请不要进行任何操作')),
                 );
                 await uploadImage(imageNotifier.image!.path, context);
               }
