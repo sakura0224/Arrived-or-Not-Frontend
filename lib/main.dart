@@ -18,7 +18,7 @@ void main() async {
   await GlobalConfig.loadServerSettings();
   runApp(
     ChangeNotifierProvider(
-      create: (context) => ImageNotifier(),
+      create: (context) => StateNotifier(),
       child: const MyApp(),
     ),
   );
@@ -37,7 +37,7 @@ class MyApp extends StatelessWidget {
           seedColor: Colors.white,
         ),
       ),
-      home: Consumer<ImageNotifier>(
+      home: Consumer<StateNotifier>(
         builder: (context, imageNotifier, child) {
           return ModalProgressHUD(
             inAsyncCall: imageNotifier.isLoading,
@@ -82,7 +82,7 @@ class MyApp extends StatelessWidget {
 }
 
 // 用于传递图片的Provider
-class ImageNotifier extends ChangeNotifier {
+class StateNotifier extends ChangeNotifier {
   XFile? _image; // image_picker返回的图片
   bool _isLoading = false; // 是否正在加载
 
@@ -111,7 +111,7 @@ class CameraPage extends StatefulWidget {
 }
 
 class CameraPageState extends State<CameraPage> {
-  Future<void> getImage(ImageNotifier imageNotifier) async {
+  Future<void> getImage(StateNotifier imageNotifier) async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.camera);
 
@@ -156,7 +156,7 @@ class CameraPageState extends State<CameraPage> {
                 ),
               );
               setState(() {
-                Provider.of<ImageNotifier>(context, listen: false).isLoading =
+                Provider.of<StateNotifier>(context, listen: false).isLoading =
                     false; // 数据已返回，停止加载
               });
             } else {
@@ -166,19 +166,23 @@ class CameraPageState extends State<CameraPage> {
           } else {
             scaffoldMessenger
                 .showSnackBar(const SnackBar(content: Text('服务器返回的数据不完整')));
+            setState(() {
+              Provider.of<StateNotifier>(context, listen: false).isLoading =
+                  false; // 停止加载
+            });
           }
         });
       } else {
         scaffoldMessenger.showSnackBar(const SnackBar(content: Text('图片上传失败')));
         setState(() {
-          Provider.of<ImageNotifier>(context, listen: false).isLoading =
+          Provider.of<StateNotifier>(context, listen: false).isLoading =
               false; // 停止加载
         });
       }
     } catch (e) {
       scaffoldMessenger.showSnackBar(SnackBar(content: Text('图片上传失败：$e')));
       setState(() {
-        Provider.of<ImageNotifier>(context, listen: false).isLoading =
+        Provider.of<StateNotifier>(context, listen: false).isLoading =
             false; // 停止加载
       });
     }
@@ -186,10 +190,10 @@ class CameraPageState extends State<CameraPage> {
 
   @override
   Widget build(BuildContext context) {
-    final imageNotifier = Provider.of<ImageNotifier>(context, listen: false);
+    final imageNotifier = Provider.of<StateNotifier>(context, listen: false);
 
     return Scaffold(
-      body: Consumer<ImageNotifier>(
+      body: Consumer<StateNotifier>(
         builder: (context, imageNotifier, child) {
           return imageNotifier.image == null
               ? const Center(
@@ -231,7 +235,7 @@ class CameraPageState extends State<CameraPage> {
             label: '上传',
             onTap: () async {
               setState(() {
-                Provider.of<ImageNotifier>(context, listen: false).isLoading =
+                Provider.of<StateNotifier>(context, listen: false).isLoading =
                     true; // 开始加载
               });
               if (imageNotifier.image == null) {
