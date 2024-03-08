@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'global_config.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
 
 // 程序入口
 void main() async {
@@ -36,27 +37,45 @@ class MyApp extends StatelessWidget {
           seedColor: Colors.white,
         ),
       ),
-      home: DefaultTabController(
-        length: 3,
-        child: Scaffold(
-          appBar: AppBar(
-            title: const Text('到没到'),
-          ),
-          body: const TabBarView(
-            children: [
-              CameraPage(), // 拍照页面
-              HistoryPage(), // 历史页面
-              MyPage(), // 我的页面
-            ],
-          ),
-          bottomNavigationBar: const TabBar(
-            tabs: [
-              Tab(icon: Icon(Icons.camera_alt), text: '识别'),
-              Tab(icon: Icon(Icons.history), text: '历史'),
-              Tab(icon: Icon(Icons.person), text: '我的'),
-            ],
-          ),
-        ),
+      home: Consumer<ImageNotifier>(
+        builder: (context, imageNotifier, child) {
+          return ModalProgressHUD(
+            inAsyncCall: imageNotifier.isLoading,
+            progressIndicator: const Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                Material(
+                  color: Colors.transparent,
+                  child: Text("识别中...",
+                      style: TextStyle(color: Colors.blueGrey, fontSize: 15)),
+                ),
+              ],
+            ),
+            child: DefaultTabController(
+              length: 3,
+              child: Scaffold(
+                appBar: AppBar(
+                  title: const Text('到没到'),
+                ),
+                body: const TabBarView(
+                  children: [
+                    CameraPage(), // 拍照页面
+                    HistoryPage(), // 历史页面
+                    MyPage(), // 我的页面
+                  ],
+                ),
+                bottomNavigationBar: const TabBar(
+                  tabs: [
+                    Tab(icon: Icon(Icons.camera_alt), text: '识别'),
+                    Tab(icon: Icon(Icons.history), text: '历史'),
+                    Tab(icon: Icon(Icons.person), text: '我的'),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -64,12 +83,21 @@ class MyApp extends StatelessWidget {
 
 // 用于传递图片的Provider
 class ImageNotifier extends ChangeNotifier {
-  XFile? _image;
+  XFile? _image; // image_picker返回的图片
+  bool _isLoading = false; // 是否正在加载
 
   XFile? get image => _image;
+  bool get isLoading => _isLoading;
 
   void setImage(XFile image) {
+    // 设置图片
     _image = image;
+    notifyListeners();
+  }
+
+  set isLoading(bool isLoading) {
+    // 设置加载状态
+    _isLoading = isLoading;
     notifyListeners();
   }
 }
@@ -127,9 +155,13 @@ class CameraPageState extends State<CameraPage> {
                   ),
                 ),
               );
+              setState(() {
+                Provider.of<ImageNotifier>(context, listen: false).isLoading =
+                    false; // 数据已返回，停止加载
+              });
             } else {
-              scaffoldMessenger.showSnackBar(
-                  const SnackBar(content: Text('接收失败，请在上传时不要进行任何操作')));
+              scaffoldMessenger
+                  .showSnackBar(const SnackBar(content: Text('接收失败，请不要退出应用')));
             }
           } else {
             scaffoldMessenger
@@ -138,9 +170,17 @@ class CameraPageState extends State<CameraPage> {
         });
       } else {
         scaffoldMessenger.showSnackBar(const SnackBar(content: Text('图片上传失败')));
+        setState(() {
+          Provider.of<ImageNotifier>(context, listen: false).isLoading =
+              false; // 停止加载
+        });
       }
     } catch (e) {
       scaffoldMessenger.showSnackBar(SnackBar(content: Text('图片上传失败：$e')));
+      setState(() {
+        Provider.of<ImageNotifier>(context, listen: false).isLoading =
+            false; // 停止加载
+      });
     }
   }
 
@@ -190,13 +230,17 @@ class CameraPageState extends State<CameraPage> {
             child: const Icon(Icons.cloud_upload),
             label: '上传',
             onTap: () async {
+              setState(() {
+                Provider.of<ImageNotifier>(context, listen: false).isLoading =
+                    true; // 开始加载
+              });
               if (imageNotifier.image == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('请先拍摄照片')),
                 );
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('正在上传图片...请不要进行任何操作')),
+                  const SnackBar(content: Text('正在上传图片...请不要退出应用')),
                 );
                 await uploadImage(imageNotifier.image!.path, context);
               }
@@ -480,8 +524,8 @@ class MyPageState extends State<MyPage> {
             showAboutDialog(
               context: context,
               applicationName: '到没到',
-              applicationVersion: '1.1.0',
-              applicationIcon: const Icon(Icons.camera, size: 45),
+              applicationVersion: '1.2.0',
+              applicationIcon: const Icon(Icons.center_focus_strong, size: 50),
               children: const <Widget>[
                 Text('上海大学大创项目'),
               ],
