@@ -142,15 +142,18 @@ class CameraPageState extends State<CameraPage> {
             await File(filePath).writeAsBytes(imageResponse.bodyBytes);
             // 假设服务器返回的数据是有效的
             bool shouldAddRecord = result['imageUrl'] != null;
+            List<String> names =
+            result['size'] != null ? List<String>.from(result['size']) : [];
+            String text = names.isNotEmpty
+                ? '${names.join('，')}等同学已出席'
+                : '识别失败';
             if (context.mounted) {
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => NewPage(
                     imagePath: filePath,
-                    text: result['size'] != null
-                        ? result['size'].toString()
-                        : '未知尺寸',
+                    text: text,
                     shouldAddRecord: shouldAddRecord,
                   ),
                 ),
@@ -285,8 +288,20 @@ class NewPageState extends State<NewPage> {
   void addRecord() async {
     final prefs = await SharedPreferences.getInstance();
     List<String> records = prefs.getStringList('records') ?? [];
-    String now = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
-    records.add('${widget.imagePath}|${widget.text}|$now'); // 添加新记录
+    String now = DateFormat('yyyy/MM/dd HH:mm:ss').format(DateTime.now());
+    String today = DateFormat('yyyy/MM/dd').format(DateTime.now());
+
+    int count = 1;
+    for (String record in records.reversed) {
+      List<String> parts = record.split('|');
+      String recordDate = parts[2].split(' ')[0];
+      if (recordDate == today) {
+        count = int.parse(parts[3]) + 1;
+        break;
+      }
+    }
+
+    records.add('${widget.imagePath}|${widget.text}|$now|$count'); // 添加新记录
     await prefs.setStringList('records', records); // 保存更新后的records列表
   }
 
@@ -344,16 +359,18 @@ class HistoryPageState extends State<HistoryPage> {
                 final imagePath = parts[0];
                 final size = parts.length > 1 ? parts[1] : '未知尺寸';
                 final time = parts[2];
+                final count = parts.length > 3 ? parts[3] : '1';
+                String head = DateFormat('M月d日').format(DateTime.now());
 
                 // 确保parts的长度大于等于3
-                if (parts.length < 3) {
+                if (parts.length < 4) {
                   return Container(); // 或者一个占位符Widget
                 }
 
                 // 创建列表项
                 return ListTile(
                   leading: Image.file(File(imagePath)),
-                  title: Text(size),
+                  title: Text('$head第$count次签到'),
                   subtitle: Text(time),
                   onTap: () {
                     // 点击跳转到NewPage，并传递图片路径和尺寸
