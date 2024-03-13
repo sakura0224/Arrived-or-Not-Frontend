@@ -143,10 +143,10 @@ class CameraPageState extends State<CameraPage> {
             // 假设服务器返回的数据是有效的
             bool shouldAddRecord = result['imageUrl'] != null;
             List<String> names =
-            result['size'] != null ? List<String>.from(result['size']) : [];
-            String text = names.isNotEmpty
-                ? '${names.join('，')}等同学已出席'
-                : '识别失败';
+                result['name'] != null ? List<String>.from(result['name']) : [];
+            String text =
+                names.isNotEmpty ? '已到学生名单：${names.join('，')}。' : '识别失败';
+            String faceNums = '已到学生${result['face_nums']}人。';
             if (context.mounted) {
               Navigator.push(
                 context,
@@ -154,6 +154,7 @@ class CameraPageState extends State<CameraPage> {
                   builder: (context) => NewPage(
                     imagePath: filePath,
                     text: text,
+                    faceNums: faceNums,
                     shouldAddRecord: shouldAddRecord,
                   ),
                 ),
@@ -245,6 +246,10 @@ class CameraPageState extends State<CameraPage> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('请先拍摄照片')),
                 );
+                setState(() {
+                  Provider.of<StateNotifier>(context, listen: false).isLoading =
+                      false; // 停止加载
+                });
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('正在上传图片...请不要退出应用')),
@@ -263,12 +268,14 @@ class CameraPageState extends State<CameraPage> {
 class NewPage extends StatefulWidget {
   final String imagePath;
   final String text;
+  final String faceNums; // 添加这个参数
   final bool shouldAddRecord; // 添加这个参数
 
   const NewPage(
       {super.key,
       required this.imagePath,
       required this.text,
+      required this.faceNums,
       this.shouldAddRecord = false});
 
   @override
@@ -301,10 +308,12 @@ class NewPageState extends State<NewPage> {
       }
     }
 
-    records.add('${widget.imagePath}|${widget.text}|$now|$count'); // 添加新记录
+    records.add(
+        '${widget.imagePath}|${widget.text}|$now|$count|${widget.faceNums}'); // 添加新记录
     await prefs.setStringList('records', records); // 保存更新后的records列表
   }
 
+  // 识别结果页面
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -314,6 +323,7 @@ class NewPageState extends State<NewPage> {
       body: Column(
         children: <Widget>[
           Image.file(File(widget.imagePath)),
+          Text(widget.faceNums),
           Text(widget.text),
         ],
       ),
@@ -357,9 +367,10 @@ class HistoryPageState extends State<HistoryPage> {
                 // 分割每条记录的字符串以获取图片路径和其他信息
                 final parts = records[index].split('|');
                 final imagePath = parts[0];
-                final size = parts.length > 1 ? parts[1] : '未知尺寸';
+                final name = parts.length > 1 ? parts[1] : '未知尺寸';
                 final time = parts[2];
                 final count = parts.length > 3 ? parts[3] : '1';
+                final faceNums = parts.length > 4 ? parts[4] : '0';
                 String head = DateFormat('M月d日').format(DateTime.now());
 
                 // 确保parts的长度大于等于3
@@ -379,7 +390,8 @@ class HistoryPageState extends State<HistoryPage> {
                       MaterialPageRoute(
                         builder: (context) => NewPage(
                           imagePath: imagePath,
-                          text: size,
+                          text: name,
+                          faceNums: faceNums,
                           shouldAddRecord: false, // 假设NewPage接受一个标志以决定是否添加记录
                         ),
                       ),
