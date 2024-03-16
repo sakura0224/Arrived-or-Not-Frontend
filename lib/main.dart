@@ -184,11 +184,17 @@ class CameraPageState extends State<CameraPage> {
         });
       }
     } catch (e) {
-      scaffoldMessenger.showSnackBar(SnackBar(content: Text('图片上传失败：$e')));
       setState(() {
         Provider.of<StateNotifier>(context, listen: false).isLoading =
             false; // 停止加载
       });
+      if (e is SocketException) {
+        scaffoldMessenger
+            .showSnackBar(const SnackBar(content: Text('无法连接到服务器')));
+      } else {
+        // 其他类型的异常
+        scaffoldMessenger.showSnackBar(SnackBar(content: Text('图片上传失败：$e')));
+      }
     }
   }
 
@@ -295,8 +301,8 @@ class NewPageState extends State<NewPage> {
   void addRecord() async {
     final prefs = await SharedPreferences.getInstance();
     List<String> records = prefs.getStringList('records') ?? [];
-    String now = DateFormat('yyyy/MM/dd HH:mm:ss').format(DateTime.now());
-    String today = DateFormat('yyyy/MM/dd').format(DateTime.now());
+    String now = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+    String today = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
     int count = 1;
     for (String record in records.reversed) {
@@ -371,7 +377,7 @@ class HistoryPageState extends State<HistoryPage> {
                 final time = parts[2];
                 final count = parts.length > 3 ? parts[3] : '1';
                 final faceNums = parts.length > 4 ? parts[4] : '0';
-                String head = DateFormat('M月d日').format(DateTime.now());
+                String head = DateFormat('M月d日').format(DateTime.parse(time));
 
                 // 确保parts的长度大于等于3
                 if (parts.length < 4) {
@@ -468,6 +474,9 @@ class MyPageState extends State<MyPage> {
                             GlobalConfig.serverPort = _port;
                           });
                           navigator.pop(); // 使用预先获取的navigator来关闭对话框
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('配置地址成功')),
+                          );
                         }).catchError((error) {
                           // 处理错误，弹出消息“出现错误，请稍后再试”，并且关闭对话框
                           ScaffoldMessenger.of(context).showSnackBar(
