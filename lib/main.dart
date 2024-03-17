@@ -11,6 +11,7 @@ import 'global_config.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
+import 'package:package_info/package_info.dart';
 
 // 程序入口
 void main() async {
@@ -120,82 +121,90 @@ class CameraPageState extends State<CameraPage> {
     }
   }
 
+// 添加握手请求方法
+  Future<bool> sendHandshakeRequest(BuildContext context) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    try {
+      var handshakeUri = Uri.parse(
+          'http://${GlobalConfig.serverIpAddress}:${GlobalConfig.serverPort}/handshake');
+      var response =
+          await http.get(handshakeUri).timeout(const Duration(seconds: 2));
+
+      if (response.statusCode == 200 && response.body == 'handshake_ack') {
+        // 握手成功
+        return true;
+      }
+      scaffoldMessenger.showSnackBar(const SnackBar(content: Text('目标服务器无响应')));
+      return false;
+    } catch (e) {
+      scaffoldMessenger.showSnackBar(SnackBar(content: Text('目标服务器无响应: $e')));
+      return false;
+    }
+  }
+
 // 上传图片
   Future<void> uploadImage(String imagePath, BuildContext context) async {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
-    try {
-      var uri = Uri.parse(
-          'http://${GlobalConfig.serverIpAddress}:${GlobalConfig.serverPort}/upload');
-      var request = http.MultipartRequest('POST', uri)
-        ..files.add(await http.MultipartFile.fromPath('image', imagePath));
+    if (await sendHandshakeRequest(context)) {
+      try {
+        var uri = Uri.parse(
+            'http://${GlobalConfig.serverIpAddress}:${GlobalConfig.serverPort}/upload');
+        var request = http.MultipartRequest('POST', uri)
+          ..files.add(await http.MultipartFile.fromPath('image', imagePath));
 
-      var response = await request.send();
+        var response = await request.send();
 
-      if (response.statusCode == 200) {
-        response.stream.transform(utf8.decoder).listen((value) async {
-          Map<String, dynamic> result = jsonDecode(value);
-          if (result['imageUrl'] != null) {
-            var imageResponse = await http.get(Uri.parse(result['imageUrl']));
-            var documentsDirectory = await getApplicationDocumentsDirectory();
-            var now = DateTime.now().millisecondsSinceEpoch;
-            var filePath = '${documentsDirectory.path}/image_$now.jpg';
-            await File(filePath).writeAsBytes(imageResponse.bodyBytes);
-            // 假设服务器返回的数据是有效的
-            bool shouldAddRecord = result['imageUrl'] != null;
-            List<String> names =
-                result['name'] != null ? List<String>.from(result['name']) : [];
-            String text =
-                names.isNotEmpty ? '已到学生名单：${names.join('，')}。' : '识别失败';
-            String faceNums = '已到学生${result['face_nums']}人。';
-            if (context.mounted) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => NewPage(
-                    imagePath: filePath,
-                    text: text,
-                    faceNums: faceNums,
-                    shouldAddRecord: shouldAddRecord,
+        if (response.statusCode == 200) {
+          response.stream.transform(utf8.decoder).listen((value) async {
+            Map<String, dynamic> result = jsonDecode(value);
+            // 如果服务器返回的json每一项数据都是有效的
+            if (result['imageUrl'] != null) {
+              var imageResponse = await http.get(Uri.parse(result['imageUrl']));
+              var documentsDirectory = await getApplicationDocumentsDirectory();
+              var now = DateTime.now().millisecondsSinceEpoch;
+              var filePath = '${documentsDirectory.path}/image_$now.jpg';
+              await File(filePath).writeAsBytes(imageResponse.bodyBytes);
+              // 假设服务器返回的数据是有效的
+              bool shouldAddRecord = true;
+              List<String> names = result['name'] != null
+                  ? List<String>.from(result['name'])
+                  : [];
+              String text =
+                  names.isNotEmpty ? '已到学生名单：${names.join('，')}。' : '识别失败';
+              String faceNums = '已到学生${result['face_nums']}人。';
+              if (context.mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => NewPage(
+                      imagePath: filePath,
+                      text: text,
+                      faceNums: faceNums,
+                      shouldAddRecord: shouldAddRecord,
+                    ),
                   ),
-                ),
-              );
-              setState(() {
-                Provider.of<StateNotifier>(context, listen: false).isLoading =
-                    false; // 数据已返回，停止加载
-              });
+                );
+              } else {
+                scaffoldMessenger.showSnackBar(
+                    const SnackBar(content: Text('接收失败，请不要退出应用')));
+              }
             } else {
               scaffoldMessenger
-                  .showSnackBar(const SnackBar(content: Text('接收失败，请不要退出应用')));
+                  .showSnackBar(const SnackBar(content: Text('服务器返回的数据不完整')));
             }
-          } else {
-            scaffoldMessenger
-                .showSnackBar(const SnackBar(content: Text('服务器返回的数据不完整')));
-            setState(() {
-              Provider.of<StateNotifier>(context, listen: false).isLoading =
-                  false; // 停止加载
-            });
-          }
-        });
-      } else {
-        scaffoldMessenger.showSnackBar(const SnackBar(content: Text('图片上传失败')));
-        setState(() {
-          Provider.of<StateNotifier>(context, listen: false).isLoading =
-              false; // 停止加载
-        });
-      }
-    } catch (e) {
-      setState(() {
-        Provider.of<StateNotifier>(context, listen: false).isLoading =
-            false; // 停止加载
-      });
-      if (e is SocketException) {
-        scaffoldMessenger
-            .showSnackBar(const SnackBar(content: Text('无法连接到服务器')));
-      } else {
-        // 其他类型的异常
+          });
+        } else {
+          scaffoldMessenger
+              .showSnackBar(const SnackBar(content: Text('图片上传失败')));
+        }
+      } catch (e) {
         scaffoldMessenger.showSnackBar(SnackBar(content: Text('图片上传失败：$e')));
       }
     }
+    setState(() {
+      Provider.of<StateNotifier>(context, listen: false).isLoading =
+          false; // 停止加载
+    });
   }
 
   @override
@@ -257,9 +266,6 @@ class CameraPageState extends State<CameraPage> {
                       false; // 停止加载
                 });
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('正在上传图片...请不要退出应用')),
-                );
                 await uploadImage(imageNotifier.image!.path, context);
               }
             },
@@ -421,6 +427,20 @@ class MyPage extends StatefulWidget {
 class MyPageState extends State<MyPage> {
   String _ipAddress = '';
   String _port = '';
+  String appVersion = '';
+
+  @override
+  void initState() {
+    super.initState();
+    getAppVersion();
+  }
+
+  void getAppVersion() async {
+    PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    setState(() {
+      appVersion = packageInfo.version;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -566,7 +586,8 @@ class MyPageState extends State<MyPage> {
             showAboutDialog(
               context: context,
               applicationName: '到没到',
-              applicationVersion: '1.2.0',
+              // applicationVersion获取的是pubspec.yaml中的版本号
+              applicationVersion: appVersion,
               applicationIcon: const Icon(Icons.center_focus_strong, size: 50),
               children: const <Widget>[
                 Text('上海大学大创项目'),
