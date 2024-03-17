@@ -11,6 +11,7 @@ import 'global_config.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
+import 'package:package_info/package_info.dart';
 
 // 程序入口
 void main() async {
@@ -120,72 +121,90 @@ class CameraPageState extends State<CameraPage> {
     }
   }
 
+// 添加握手请求方法
+  Future<bool> sendHandshakeRequest(BuildContext context) async {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    try {
+      var handshakeUri = Uri.parse(
+          'http://${GlobalConfig.serverIpAddress}:${GlobalConfig.serverPort}/handshake');
+      var response =
+          await http.get(handshakeUri).timeout(const Duration(seconds: 2));
+
+      if (response.statusCode == 200 && response.body == 'handshake_ack') {
+        // 握手成功
+        return true;
+      }
+      scaffoldMessenger.showSnackBar(const SnackBar(content: Text('目标服务器无响应')));
+      return false;
+    } catch (e) {
+      scaffoldMessenger.showSnackBar(SnackBar(content: Text('目标服务器无响应: $e')));
+      return false;
+    }
+  }
+
 // 上传图片
   Future<void> uploadImage(String imagePath, BuildContext context) async {
     final scaffoldMessenger = ScaffoldMessenger.of(context);
-    try {
-      var uri = Uri.parse(
-          'http://${GlobalConfig.serverIpAddress}:${GlobalConfig.serverPort}/upload');
-      var request = http.MultipartRequest('POST', uri)
-        ..files.add(await http.MultipartFile.fromPath('image', imagePath));
+    if (await sendHandshakeRequest(context)) {
+      try {
+        var uri = Uri.parse(
+            'http://${GlobalConfig.serverIpAddress}:${GlobalConfig.serverPort}/upload');
+        var request = http.MultipartRequest('POST', uri)
+          ..files.add(await http.MultipartFile.fromPath('image', imagePath));
 
-      var response = await request.send();
+        var response = await request.send();
 
-      if (response.statusCode == 200) {
-        response.stream.transform(utf8.decoder).listen((value) async {
-          Map<String, dynamic> result = jsonDecode(value);
-          if (result['imageUrl'] != null) {
-            var imageResponse = await http.get(Uri.parse(result['imageUrl']));
-            var documentsDirectory = await getApplicationDocumentsDirectory();
-            var now = DateTime.now().millisecondsSinceEpoch;
-            var filePath = '${documentsDirectory.path}/image_$now.jpg';
-            await File(filePath).writeAsBytes(imageResponse.bodyBytes);
-            // 假设服务器返回的数据是有效的
-            bool shouldAddRecord = result['imageUrl'] != null;
-            if (context.mounted) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => NewPage(
-                    imagePath: filePath,
-                    text: result['size'] != null
-                        ? result['size'].toString()
-                        : '未知尺寸',
-                    shouldAddRecord: shouldAddRecord,
+        if (response.statusCode == 200) {
+          response.stream.transform(utf8.decoder).listen((value) async {
+            Map<String, dynamic> result = jsonDecode(value);
+            // 如果服务器返回的json每一项数据都是有效的
+            if (result['imageUrl'] != null) {
+              var imageResponse = await http.get(Uri.parse(result['imageUrl']));
+              var documentsDirectory = await getApplicationDocumentsDirectory();
+              var now = DateTime.now().millisecondsSinceEpoch;
+              var filePath = '${documentsDirectory.path}/image_$now.jpg';
+              await File(filePath).writeAsBytes(imageResponse.bodyBytes);
+              // 假设服务器返回的数据是有效的
+              bool shouldAddRecord = true;
+              List<String> names = result['name'] != null
+                  ? List<String>.from(result['name'])
+                  : [];
+              String text =
+                  names.isNotEmpty ? '已到学生名单：${names.join('，')}。' : '识别失败';
+              String faceNums = '已到学生${result['face_nums']}人。';
+              if (context.mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => NewPage(
+                      imagePath: filePath,
+                      text: text,
+                      faceNums: faceNums,
+                      shouldAddRecord: shouldAddRecord,
+                    ),
                   ),
-                ),
-              );
-              setState(() {
-                Provider.of<StateNotifier>(context, listen: false).isLoading =
-                    false; // 数据已返回，停止加载
-              });
+                );
+              } else {
+                scaffoldMessenger.showSnackBar(
+                    const SnackBar(content: Text('接收失败，请不要退出应用')));
+              }
             } else {
               scaffoldMessenger
-                  .showSnackBar(const SnackBar(content: Text('接收失败，请不要退出应用')));
+                  .showSnackBar(const SnackBar(content: Text('服务器返回的数据不完整')));
             }
-          } else {
-            scaffoldMessenger
-                .showSnackBar(const SnackBar(content: Text('服务器返回的数据不完整')));
-            setState(() {
-              Provider.of<StateNotifier>(context, listen: false).isLoading =
-                  false; // 停止加载
-            });
-          }
-        });
-      } else {
-        scaffoldMessenger.showSnackBar(const SnackBar(content: Text('图片上传失败')));
-        setState(() {
-          Provider.of<StateNotifier>(context, listen: false).isLoading =
-              false; // 停止加载
-        });
+          });
+        } else {
+          scaffoldMessenger
+              .showSnackBar(const SnackBar(content: Text('图片上传失败')));
+        }
+      } catch (e) {
+        scaffoldMessenger.showSnackBar(SnackBar(content: Text('图片上传失败：$e')));
       }
-    } catch (e) {
-      scaffoldMessenger.showSnackBar(SnackBar(content: Text('图片上传失败：$e')));
-      setState(() {
-        Provider.of<StateNotifier>(context, listen: false).isLoading =
-            false; // 停止加载
-      });
     }
+    setState(() {
+      Provider.of<StateNotifier>(context, listen: false).isLoading =
+          false; // 停止加载
+    });
   }
 
   @override
@@ -242,10 +261,11 @@ class CameraPageState extends State<CameraPage> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('请先拍摄照片')),
                 );
+                setState(() {
+                  Provider.of<StateNotifier>(context, listen: false).isLoading =
+                      false; // 停止加载
+                });
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('正在上传图片...请不要退出应用')),
-                );
                 await uploadImage(imageNotifier.image!.path, context);
               }
             },
@@ -260,12 +280,14 @@ class CameraPageState extends State<CameraPage> {
 class NewPage extends StatefulWidget {
   final String imagePath;
   final String text;
+  final String faceNums; // 添加这个参数
   final bool shouldAddRecord; // 添加这个参数
 
   const NewPage(
       {super.key,
       required this.imagePath,
       required this.text,
+      required this.faceNums,
       this.shouldAddRecord = false});
 
   @override
@@ -286,10 +308,24 @@ class NewPageState extends State<NewPage> {
     final prefs = await SharedPreferences.getInstance();
     List<String> records = prefs.getStringList('records') ?? [];
     String now = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
-    records.add('${widget.imagePath}|${widget.text}|$now'); // 添加新记录
+    String today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+    int count = 1;
+    for (String record in records.reversed) {
+      List<String> parts = record.split('|');
+      String recordDate = parts[2].split(' ')[0];
+      if (recordDate == today) {
+        count = int.parse(parts[3]) + 1;
+        break;
+      }
+    }
+
+    records.add(
+        '${widget.imagePath}|${widget.text}|$now|$count|${widget.faceNums}'); // 添加新记录
     await prefs.setStringList('records', records); // 保存更新后的records列表
   }
 
+  // 识别结果页面
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -299,6 +335,7 @@ class NewPageState extends State<NewPage> {
       body: Column(
         children: <Widget>[
           Image.file(File(widget.imagePath)),
+          Text(widget.faceNums),
           Text(widget.text),
         ],
       ),
@@ -342,18 +379,21 @@ class HistoryPageState extends State<HistoryPage> {
                 // 分割每条记录的字符串以获取图片路径和其他信息
                 final parts = records[index].split('|');
                 final imagePath = parts[0];
-                final size = parts.length > 1 ? parts[1] : '未知尺寸';
+                final name = parts.length > 1 ? parts[1] : '未知尺寸';
                 final time = parts[2];
+                final count = parts.length > 3 ? parts[3] : '1';
+                final faceNums = parts.length > 4 ? parts[4] : '0';
+                String head = DateFormat('M月d日').format(DateTime.parse(time));
 
                 // 确保parts的长度大于等于3
-                if (parts.length < 3) {
+                if (parts.length < 4) {
                   return Container(); // 或者一个占位符Widget
                 }
 
                 // 创建列表项
                 return ListTile(
                   leading: Image.file(File(imagePath)),
-                  title: Text(size),
+                  title: Text('$head第$count次签到'),
                   subtitle: Text(time),
                   onTap: () {
                     // 点击跳转到NewPage，并传递图片路径和尺寸
@@ -362,7 +402,8 @@ class HistoryPageState extends State<HistoryPage> {
                       MaterialPageRoute(
                         builder: (context) => NewPage(
                           imagePath: imagePath,
-                          text: size,
+                          text: name,
+                          faceNums: faceNums,
                           shouldAddRecord: false, // 假设NewPage接受一个标志以决定是否添加记录
                         ),
                       ),
@@ -386,6 +427,20 @@ class MyPage extends StatefulWidget {
 class MyPageState extends State<MyPage> {
   String _ipAddress = '';
   String _port = '';
+  String appVersion = '';
+
+  @override
+  void initState() {
+    super.initState();
+    getAppVersion();
+  }
+
+  void getAppVersion() async {
+    PackageInfo packageInfo = await PackageInfo.fromPlatform();
+    setState(() {
+      appVersion = packageInfo.version;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -439,6 +494,9 @@ class MyPageState extends State<MyPage> {
                             GlobalConfig.serverPort = _port;
                           });
                           navigator.pop(); // 使用预先获取的navigator来关闭对话框
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('配置地址成功')),
+                          );
                         }).catchError((error) {
                           // 处理错误，弹出消息“出现错误，请稍后再试”，并且关闭对话框
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -528,7 +586,8 @@ class MyPageState extends State<MyPage> {
             showAboutDialog(
               context: context,
               applicationName: '到没到',
-              applicationVersion: '1.2.0',
+              // applicationVersion获取的是pubspec.yaml中的版本号
+              applicationVersion: appVersion,
               applicationIcon: const Icon(Icons.center_focus_strong, size: 50),
               children: const <Widget>[
                 Text('上海大学大创项目'),
