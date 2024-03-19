@@ -36,7 +36,7 @@ android {
     println("Apk out info:")
     applicationVariants.all { variant ->
         variant.outputs.all { 
-            def appName = '到没到'
+            def appName = 'daomeidao'
             def buildType = variant.buildType.name
             // 输入结果如：MyAppName-0.5.1-release.apk
             outputFileName = "${appName}-${defaultConfig.versionName}-${buildType}.apk"
