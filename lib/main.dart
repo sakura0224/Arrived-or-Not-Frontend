@@ -11,7 +11,7 @@ import 'global_config.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
-import 'package:package_info/package_info.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 // 程序入口
 void main() async {
@@ -427,18 +427,25 @@ class MyPage extends StatefulWidget {
 class MyPageState extends State<MyPage> {
   String _ipAddress = '';
   String _port = '';
-  String appVersion = '';
+  PackageInfo _packageInfo = PackageInfo(
+    appName: 'Unknown',
+    packageName: 'Unknown',
+    version: 'Unknown',
+    buildNumber: 'Unknown',
+    buildSignature: 'Unknown',
+    installerStore: 'Unknown',
+  );
 
   @override
   void initState() {
     super.initState();
-    getAppVersion();
+    _initPackageInfo();
   }
 
-  void getAppVersion() async {
-    PackageInfo packageInfo = await PackageInfo.fromPlatform();
+  Future<void> _initPackageInfo() async {
+    final info = await PackageInfo.fromPlatform();
     setState(() {
-      appVersion = packageInfo.version;
+      _packageInfo = info;
     });
   }
 
@@ -585,10 +592,13 @@ class MyPageState extends State<MyPage> {
           onTap: () {
             showAboutDialog(
               context: context,
-              applicationName: '到没到',
-              // applicationVersion获取的是pubspec.yaml中的版本号
-              applicationVersion: appVersion,
-              applicationIcon: const Icon(Icons.center_focus_strong, size: 50),
+              applicationName: _packageInfo.appName,
+              applicationVersion: _packageInfo.version,
+              applicationIcon: Image.asset(
+                'assets/icon_app.png',
+                width: 50, // 设置图像的宽度为100像素
+                height: 50, // 设置图像的高度为100像素
+              ),
               children: const <Widget>[
                 Text('上海大学大创项目'),
               ],
