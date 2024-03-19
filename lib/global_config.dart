@@ -1,3 +1,4 @@
+// 持久化储存服务器地址和端口号
 import 'package:shared_preferences/shared_preferences.dart';
 
 class GlobalConfig {
