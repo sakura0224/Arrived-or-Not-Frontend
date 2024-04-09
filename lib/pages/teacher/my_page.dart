@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import '../global_config.dart';
-
+import '../../global_config.dart';
+import '../login/login_page.dart';
 
 class MyPage extends StatefulWidget {
   const MyPage({super.key});
@@ -192,6 +192,51 @@ class MyPageState extends State<MyPage> {
               children: const <Widget>[
                 Text('上海大学大创项目'),
               ],
+            );
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.exit_to_app),
+          title: const Text('退出登录'),
+          onTap: () async {
+            // 显示确认对话框
+            showDialog(
+              context: context,
+              builder: (BuildContext dialogContext) {
+                return AlertDialog(
+                  title: const Text('退出登录'),
+                  content: const Text('确定要退出登录吗？'),
+                  actions: <Widget>[
+                    TextButton(
+                      child: const Text('取消'),
+                      onPressed: () {
+                        Navigator.of(dialogContext).pop();
+                      },
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        // 清除SharedPreferences中的记录
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.remove('stuLoggedIn');
+                        await prefs.remove('teaLoggedIn');
+                        if (context.mounted) {
+                          // 关闭对话框并显示提示
+                          Navigator.of(dialogContext).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('已退出登录')),
+                          );
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => const LoginPage()),
+                          );
+                        }
+                      },
+                      child: const Text('确认'),
+                    ),
+                  ],
+                );
+              },
             );
           },
         ),

@@ -1,12 +1,11 @@
-// ignore_for_file: file_names
-// 上传图片的相关函数
+// 上传图片的相关函数，在home_page.dart中调用uploadImage函数，该函数会调用sendHandshakeRequest函数，如果握手成功，会调用http.MultipartRequest的send方法上传图片，然后解析服务器返回的json数据，最后跳转到NewPage页面。NewPage页面会根据shouldAddRecord参数决定是否添加记录。
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../global_config.dart';
 import 'package:path_provider/path_provider.dart';
-import '../pages/new_page.dart';
+import '../pages/teacher/new_page.dart';
 
 // 添加握手请求方法
 Future<bool> sendHandshakeRequest(BuildContext context) async {

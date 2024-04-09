@@ -4,9 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
-import '../state_notifier.dart';
-import '../functions/upload_image.dart';
-
+import '../../state_notifier.dart';
+import '../../functions/upload_image.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
