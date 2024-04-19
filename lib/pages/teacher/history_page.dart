@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'new_page.dart';
 
-
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
 
@@ -32,6 +31,13 @@ class HistoryPageState extends State<HistoryPage> {
 
   @override
   Widget build(BuildContext context) {
+    records.sort((a, b) {
+      final partsA = a.split('|');
+      final partsB = b.split('|');
+      final timeA = DateTime.parse(partsA[2]);
+      final timeB = DateTime.parse(partsB[2]);
+      return -timeA.compareTo(timeB);
+    });
     return Scaffold(
       body: records.isEmpty
           ? const Center(child: Text('没有历史记录'))

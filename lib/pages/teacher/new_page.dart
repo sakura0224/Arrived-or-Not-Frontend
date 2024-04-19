@@ -1,8 +1,7 @@
 // 用于显示识别结果的页面
 import 'dart:io';
 import 'package:flutter/material.dart';
-import '../functions/add_record.dart';
-
+import '../../functions/add_record.dart';
 
 class NewPage extends StatefulWidget {
   final String imagePath;

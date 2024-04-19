@@ -1,4 +1,4 @@
-// 用于添加记录的函数
+// 用于添加记录的函数，在new_record.dart中调用
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 

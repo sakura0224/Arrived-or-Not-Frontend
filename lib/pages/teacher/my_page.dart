@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import '../global_config.dart';
-
+import 'components/components.dart';
 
 class MyPage extends StatefulWidget {
   const MyPage({super.key});
@@ -15,8 +14,6 @@ class MyPage extends StatefulWidget {
 }
 
 class MyPageState extends State<MyPage> {
-  String _ipAddress = '';
-  String _port = '';
   PackageInfo _packageInfo = PackageInfo(
     appName: 'Unknown',
     packageName: 'Unknown',
@@ -43,78 +40,7 @@ class MyPageState extends State<MyPage> {
   Widget build(BuildContext context) {
     return ListView(
       children: <Widget>[
-        InkWell(
-          onTap: () {
-            showDialog(
-              context: context,
-              builder: (context) {
-                return AlertDialog(
-                  title: const Text('配置服务端地址'),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      TextField(
-                        onChanged: (value) {
-                          _ipAddress = value;
-                        },
-                        decoration: const InputDecoration(
-                          labelText: 'IP地址',
-                        ),
-                      ),
-                      TextField(
-                        onChanged: (value) {
-                          _port = value;
-                        },
-                        decoration: const InputDecoration(
-                          labelText: '端口',
-                        ),
-                      ),
-                    ],
-                  ),
-                  actions: <Widget>[
-                    TextButton(
-                      child: const Text('取消'),
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                    TextButton(
-                      child: const Text('确认'),
-                      onPressed: () {
-                        // 在异步操作前获取NavigatorState
-                        final navigator = Navigator.of(context);
-                        // 异步保存IP地址和端口
-                        GlobalConfig.saveServerSettings(_ipAddress, _port)
-                            .then((_) {
-                          setState(() {
-                            GlobalConfig.serverIpAddress = _ipAddress;
-                            GlobalConfig.serverPort = _port;
-                          });
-                          navigator.pop(); // 使用预先获取的navigator来关闭对话框
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('配置地址成功')),
-                          );
-                        }).catchError((error) {
-                          // 处理错误，弹出消息“出现错误，请稍后再试”，并且关闭对话框
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('出现错误，请稍后再试'),
-                            ),
-                          );
-                          navigator.pop();
-                        });
-                      },
-                    ),
-                  ],
-                );
-              },
-            );
-          },
-          child: const ListTile(
-            leading: Icon(Icons.settings), // 齿轮图标
-            title: Text('配置服务端地址'),
-          ),
-        ),
+        const SetIP(),
         ListTile(
           leading: const Icon(Icons.cleaning_services),
           title: const Text('清除缓存'),
@@ -195,6 +121,7 @@ class MyPageState extends State<MyPage> {
             );
           },
         ),
+        const Logout()
       ],
     );
   }
