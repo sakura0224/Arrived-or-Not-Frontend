@@ -1,7 +1,7 @@
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
 
-class StateNotifier extends ChangeNotifier{
+class StateNotifier extends ChangeNotifier {
   XFile? _image; // image_picker返回的图片
   bool _isLoading = false; // 是否正在加载
 

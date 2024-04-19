@@ -1,72 +1,105 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
+import 'dart:async';
+import '../../functions/upload_video.dart';
+import '../../main.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Video Recorder'),
-      ),
-      body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            _startRecording(context);
-          },
-          child: const Text('Record Video'),
-        ),
-      ),
-    );
+  HomePageState createState() => HomePageState();
+}
+
+class HomePageState extends State<HomePage> {
+  late CameraController controller;
+  bool isRecording = false;
+
+  @override
+  void initState() {
+    super.initState();
+    initCamera();
   }
 
-  Future<void> _startRecording(BuildContext context) async {
-    // Get the list of available cameras
-    final cameras = await availableCameras();
-
-    // Select the back camera
-    final camera = cameras.firstWhere(
-      (camera) => camera.lensDirection == CameraLensDirection.back,
+  Future<void> initCamera() async {
+    controller = CameraController(
+      cameras.firstWhere(
+        (camera) => camera.lensDirection == CameraLensDirection.front,
+      ),
+      ResolutionPreset.medium,
     );
-
-    // Create a CameraController
-    final controller = CameraController(
-      camera,
-      ResolutionPreset.high,
-    );
-
-    // Initialize the camera
     await controller.initialize();
+    setState(() {}); // Ensure UI is updated after initialization
+  }
 
-    // Start recording video
-    const videoPath = '/path/to/save/video.mp4';
-    await controller.startVideoRecording();
-
-    // Wait for 5 seconds
-    await Future.delayed(const Duration(seconds: 5));
-
-    // Stop recording video
-    await controller.stopVideoRecording();
-    if (context.mounted) {
-      // Show a dialog with the video path
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Video Recorded'),
-          content: const Text('Video saved at $videoPath'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-    }
-    // Dispose the camera controller
+  @override
+  void dispose() {
     controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> startVideoRecording() async {
+    if (!controller.value.isInitialized || isRecording) {
+      return;
+    }
+    try {
+      await controller.startVideoRecording();
+      setState(() {
+        isRecording = true;
+      });
+
+      // Automatically stop recording after 5 seconds
+      await Future.delayed(const Duration(seconds: 5));
+      await stopVideoRecording();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('采集视频失败: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> stopVideoRecording() async {
+    if (!controller.value.isRecordingVideo) {
+      return;
+    }
+
+    try {
+      XFile videoFile = await controller.stopVideoRecording();
+      setState(() {
+        isRecording = false;
+      });
+      if (mounted) {
+        await uploadVideo(videoFile.path, context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('停止采集失败: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!controller.value.isInitialized) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return Scaffold(
+      appBar: AppBar(title: const Text('采集面部信息时请轻微晃动头部')),
+      body: Column(
+        children: <Widget>[
+          Expanded(
+            child: CameraPreview(controller), // Camera preview is shown here
+          ),
+          ElevatedButton(
+            onPressed: isRecording ? null : startVideoRecording,
+            child: Text(isRecording ? '采集中...' : '开始采集'),
+          )
+        ],
+      ),
+    );
   }
 }
