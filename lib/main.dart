@@ -5,14 +5,11 @@ import 'pages/login/screens/signup_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'pages/teacher/root.dart';
 import 'pages/student/root.dart';
-import 'package:camera/camera.dart';
 import 'global_config.dart';
 
-late List<CameraDescription> cameras;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GlobalConfig.loadServerSettings();
-  cameras = await availableCameras();
   SharedPreferences prefs = await SharedPreferences.getInstance();
   final String? userType = prefs.getString('userType');
   runApp(MyApp(userType: userType));

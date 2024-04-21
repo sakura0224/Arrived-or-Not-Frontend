@@ -6,14 +6,20 @@ import 'package:http/http.dart' as http;
 import '../global_config.dart';
 import 'package:path_provider/path_provider.dart';
 import '../pages/teacher/new_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // 上传图片
 Future<void> uploadImage(String imagePath, BuildContext context) async {
   final scaffoldMessenger = ScaffoldMessenger.of(context);
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  String? token = prefs.getString('jwtToken');
   try {
     var uri = Uri.parse(
         'http://${GlobalConfig.serverIpAddress}:${GlobalConfig.serverPort}/image');
     var request = http.MultipartRequest('POST', uri)
+      ..headers.addAll({
+        'Authorization': 'Bearer $token', // 添加 Authorization 头
+      })
       ..files.add(await http.MultipartFile.fromPath('image', imagePath));
 
     var response = await request.send();
