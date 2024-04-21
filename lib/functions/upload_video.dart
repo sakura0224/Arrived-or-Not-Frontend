@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../global_config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> uploadVideo(String videoPath, BuildContext context) async {
   final scaffoldMessenger = ScaffoldMessenger.of(context);
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  String? token = prefs.getString('jwtToken');
   try {
     var uri = Uri.parse(
         'http://${GlobalConfig.serverIpAddress}:${GlobalConfig.serverPort}/video');
     var request = http.MultipartRequest('POST', uri)
+      ..headers.addAll({
+        'Authorization': 'Bearer $token', // 添加 Authorization 头
+      })
       ..files.add(await http.MultipartFile.fromPath('video', videoPath));
 
     var response = await request.send();

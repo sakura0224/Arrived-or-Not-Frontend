@@ -32,7 +32,7 @@ class StuApp extends StatelessWidget {
                   ),
                   body: const TabBarView(
                     children: [
-                      HomePage(), // 拍照页面
+                      CameraPage(), // 拍照页面
                       MyPage(), // 我的页面
                     ],
                   ),
