@@ -6,6 +6,7 @@ import '../../functions/check_login.dart';
 import 'home_page.dart';
 import 'history_page.dart';
 import 'my_page.dart';
+import '../login/screens/home_screen.dart';
 
 class TeaApp extends StatelessWidget {
   const TeaApp({super.key});
@@ -25,25 +26,30 @@ class TeaApp extends StatelessWidget {
               ),
             );
           } else if (snapshot.hasError) {
-            return Text('Error: ${snapshot.error}');
+            return Scaffold(
+              body: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Error: ${snapshot.error}'),
+                    ElevatedButton(
+                      onPressed: () {
+                        // 添加重新验证或刷新页面的逻辑
+                        Navigator.of(context).pushReplacement(MaterialPageRoute(
+                            builder: (context) => const HomeScreen()));
+                      },
+                      child: const Text('返回主页'),
+                    ),
+                  ],
+                ),
+              ),
+            );
           } else if (snapshot.data == true) {
             // 用户验证成功
             return Consumer<StateNotifier>(
               builder: (context, imageNotifier, child) {
                 return ModalProgressHUD(
                   inAsyncCall: imageNotifier.isLoading,
-                  progressIndicator: const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(),
-                      Material(
-                        color: Colors.transparent,
-                        child: Text("识别中...",
-                            style: TextStyle(
-                                color: Colors.blueGrey, fontSize: 15)),
-                      ),
-                    ],
-                  ),
                   child: DefaultTabController(
                     length: 3,
                     child: Scaffold(
@@ -72,11 +78,13 @@ class TeaApp extends StatelessWidget {
           } else {
             // 用户验证失败或会话过期
             WidgetsBinding.instance.addPostFrameCallback((_) {
+              Navigator.of(context).pushReplacement(MaterialPageRoute(
+                  builder: (context) => const HomeScreen())); // 重定向到登录页面
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('登录会话已过期，请重新登录')),
               );
             });
-            return const HomePage();
+            return Scaffold(body: Container()); // 返回一个空的容器以避免界面异常
           }
         },
       ),

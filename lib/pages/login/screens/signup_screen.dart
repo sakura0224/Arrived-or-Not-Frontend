@@ -32,54 +32,72 @@ class _SignUpScreenState extends State<SignUpScreen> {
     setState(() {
       _saving = true;
     });
+    HandshakeStatus status = await sendHandshakeRequest();
     if (_confirmPass == _password) {
-      try {
-        var url = Uri.parse(
-            'http://${GlobalConfig.serverIpAddress}:${GlobalConfig.serverPort}/users/register');
-        var request = await http.post(url, body: {
-          'number': number,
-          'usertype': userType,
-          'name': name,
-          'password': password,
-        });
-        if (request.statusCode == 201 && context.mounted) {
-          signUpAlert(
-            context: context,
-            title: '注册成功',
-            desc: '现在即可登录',
-            btnText: '立即登录',
-            onPressed: () {
+      if (status == HandshakeStatus.success) {
+        try {
+          var url = Uri.parse(
+              'http://${GlobalConfig.serverIpAddress}:${GlobalConfig.serverPort}/users/register');
+          var request = await http.post(url, body: {
+            'number': number,
+            'usertype': userType,
+            'name': name,
+            'password': password,
+          });
+          if (request.statusCode == 201) {
+            if (context.mounted) {
+              signUpAlert(
+                context: context,
+                title: '注册成功',
+                desc: '现在即可登录',
+                btnText: '立即登录',
+                onPressed: () {
+                  setState(() {
+                    _saving = false;
+                    Navigator.popAndPushNamed(context, SignUpScreen.id);
+                  });
+                  Navigator.pushNamed(context, LoginScreen.id);
+                },
+              ).show();
+            } else {
               setState(() {
                 _saving = false;
                 Navigator.popAndPushNamed(context, SignUpScreen.id);
               });
-              Navigator.pushNamed(context, LoginScreen.id);
-            },
-          ).show();
+            }
+          }
+        } catch (e) {
+          if (context.mounted) {
+            signUpAlert(
+                context: context,
+                onPressed: () {
+                  SystemNavigator.pop();
+                },
+                title: '出错了',
+                desc: '请关闭APP再次尝试',
+                btnText: '关闭APP');
+          }
         }
-      } catch (e) {
+        setState(() {
+          _saving = false;
+        });
+      } else {
         if (context.mounted) {
-          signUpAlert(
-              context: context,
-              onPressed: () {
-                SystemNavigator.pop();
-              },
-              title: '出错了',
-              desc: '请关闭APP再次尝试',
-              btnText: '关闭APP');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('目标服务器无响应')),
+          );
         }
       }
-      setState(() {
-        _saving = false;
-      });
     } else {
-      showAlert(
-          context: context,
-          title: '密码不匹配',
-          desc: '请确认您输入的两次密码一致',
-          onPressed: () {
-            Navigator.pop(context);
-          }).show();
+      if (context.mounted) {
+        showAlert(
+            context: context,
+            title: '密码不匹配',
+            desc: '请确认您输入的两次密码一致',
+            onPressed: () {
+              Navigator.pop(context);
+            }).show();
+      }
     }
   }
 

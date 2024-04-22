@@ -20,7 +20,24 @@ class StuApp extends StatelessWidget {
             ),
           );
         } else if (snapshot.hasError) {
-          return Text('Error: ${snapshot.error}');
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Error: ${snapshot.error}'),
+                  ElevatedButton(
+                    onPressed: () {
+                      // 添加重新验证或刷新页面的逻辑
+                      Navigator.of(context).pushReplacement(MaterialPageRoute(
+                          builder: (context) => const HomeScreen()));
+                    },
+                    child: const Text('返回主页'),
+                  ),
+                ],
+              ),
+            ),
+          );
         } else if (snapshot.data == true) {
           return DefaultTabController(
             length: 2,
@@ -48,11 +65,13 @@ class StuApp extends StatelessWidget {
           );
         } else {
           WidgetsBinding.instance.addPostFrameCallback((_) {
+            Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => const HomeScreen()));
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('登录会话已过期，请重新登录')),
             );
           });
-          return const HomeScreen();
+          return Scaffold(body: Container()); // 返回一个空容器，避免界面异常
         }
       },
     );
