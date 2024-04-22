@@ -30,39 +30,56 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() {
       _saving = true;
     });
-    try {
-      var url = Uri.parse(
-          'http://${GlobalConfig.serverIpAddress}:${GlobalConfig.serverPort}/users/login');
-      var response = await http.post(url, body: {
-        'number': number,
-        'password': password,
-      });
-
-      if (response.statusCode == 200) {
-        var result = jsonDecode(response.body); // 假设响应体中的令牌是在'token'键下
-        var token = result['token'];
-        var userType = result['usertype'];
-        print('$result');
-        // 保存令牌到shared_preferences
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('jwtToken', token);
-        await prefs.setString('userType', userType);
-        setState(() {
-          _saving = false;
-          if (userType == 'student') {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const StuApp()),
-            );
-          } else if (userType == 'teacher') {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const TeaApp()),
-            );
-          }
+    HandshakeStatus status = await sendHandshakeRequest();
+    if (status == HandshakeStatus.success) {
+      try {
+        var url = Uri.parse(
+            'http://${GlobalConfig.serverIpAddress}:${GlobalConfig.serverPort}/users/login');
+        var response = await http.post(url, body: {
+          'number': number,
+          'password': password,
         });
-      } else {
-        if (response.statusCode == 401 && context.mounted) {
+
+        if (response.statusCode == 200) {
+          var result = jsonDecode(response.body); // 假设响应体中的令牌是在'token'键下
+          var token = result['token'];
+          var userType = result['usertype'];
+          // 保存令牌到shared_preferences
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('jwtToken', token);
+          await prefs.setString('userType', userType);
+          setState(() {
+            _saving = false;
+            if (userType == 'student') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const StuApp()),
+              );
+            } else if (userType == 'teacher') {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const TeaApp()),
+              );
+            }
+          });
+        } else {
+          if (response.statusCode == 401 && context.mounted) {
+            signUpAlert(
+              context: context,
+              onPressed: () {
+                setState(() {
+                  _saving = false;
+                });
+                Navigator.popAndPushNamed(context, LoginScreen.id);
+              },
+              title: '学/工号或密码错误',
+              desc: '请再次确认您的学/工号或密码',
+              btnText: '重试',
+            ).show();
+          }
+        }
+      } catch (e) {
+        if (context.mounted) {
           signUpAlert(
             context: context,
             onPressed: () {
@@ -77,20 +94,14 @@ class _LoginScreenState extends State<LoginScreen> {
           ).show();
         }
       }
-    } catch (e) {
+    } else {
+      setState(() {
+        _saving = false;
+      });
       if (context.mounted) {
-        signUpAlert(
-          context: context,
-          onPressed: () {
-            setState(() {
-              _saving = false;
-            });
-            Navigator.popAndPushNamed(context, LoginScreen.id);
-          },
-          title: '学/工号或密码错误',
-          desc: '请再次确认您的学/工号或密码',
-          btnText: '重试',
-        ).show();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('目标服务器无响应')),
+        );
       }
     }
   }
