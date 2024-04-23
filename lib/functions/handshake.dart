@@ -2,7 +2,7 @@ import 'package:http/http.dart' as http;
 import '../global_config.dart';
 
 // 定义一个枚举来表示不同的握手结果
-enum HandshakeStatus { success, noResponse, error }
+enum HandshakeStatus { success, noResponse}
 
 Future<HandshakeStatus> sendHandshakeRequest() async {
   try {
@@ -20,9 +20,9 @@ Future<HandshakeStatus> sendHandshakeRequest() async {
       return HandshakeStatus.noResponse; // 无响应
     }
   } catch (e) {
-    return HandshakeStatus.error; // 发生错误
+    return HandshakeStatus.noResponse; // 发生错误
   }
-  throw Exception('Unexpected error occurred');
+  return HandshakeStatus.noResponse; // 无响应
 }
 
 
