@@ -22,81 +22,39 @@ class _SignUpScreenState extends State<SignUpScreen> {
   late String _password;
   late String _name;
   late String _confirmPass;
-  late String _userType;
+  String _userType = '';
   bool _saving = false;
 
-  Future<void> register(String number, String password, String confirmPass,
-      String name, String userType, BuildContext context) async {
-    _confirmPass = confirmPass;
-    FocusManager.instance.primaryFocus?.unfocus();
-    setState(() {
-      _saving = true;
-    });
+  Future<void> register(String userType, BuildContext context) async {
+    userType = _userType;
     HandshakeStatus status = await sendHandshakeRequest();
-    if (_confirmPass == _password) {
-      if (status == HandshakeStatus.success) {
-        try {
-          var url = Uri.parse(
-              'http://${GlobalConfig.serverIpAddress}:${GlobalConfig.serverPort}/users/register');
-          var request = await http.post(url, body: {
-            'number': number,
-            'usertype': userType,
-            'name': name,
-            'password': password,
-          });
-          if (request.statusCode == 201) {
-            if (context.mounted) {
-              signUpAlert(
-                context: context,
-                title: '注册成功',
-                desc: '现在即可登录',
-                btnText: '立即登录',
-                onPressed: () {
-                  setState(() {
-                    _saving = false;
-                    Navigator.popAndPushNamed(context, SignUpScreen.id);
-                  });
-                  Navigator.pushNamed(context, LoginScreen.id);
-                },
-              ).show();
-            } else {
-              setState(() {
-                _saving = false;
-                Navigator.popAndPushNamed(context, SignUpScreen.id);
-              });
-            }
-          }
-        } catch (e) {
-          if (context.mounted) {
-            signUpAlert(
-                context: context,
-                onPressed: () {
-                  SystemNavigator.pop();
-                },
-                title: '出错了',
-                desc: '请关闭APP再次尝试',
-                btnText: '关闭APP');
-          }
-        }
+    if (status != HandshakeStatus.success) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('目标服务器无响应')),
+        );
         setState(() {
           _saving = false;
         });
-      } else {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('目标服务器无响应')),
-          );
-        }
       }
     } else {
-      if (context.mounted) {
-        showAlert(
-            context: context,
-            title: '密码不匹配',
-            desc: '请确认您输入的两次密码一致',
-            onPressed: () {
-              Navigator.pop(context);
-            }).show();
+      var url = Uri.parse(
+          'http://${GlobalConfig.serverIpAddress}:${GlobalConfig.serverPort}/users/register');
+      var response = await http.post(url, body: {
+        'number': _number,
+        'usertype': userType,
+        'name': _name,
+        'password': _password,
+      });
+      if (response.statusCode != 201) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('注册失败: ${response.statusCode}')),
+          );
+          setState(() {
+            _saving = false;
+          });
+        }
       }
     }
   }
@@ -191,33 +149,70 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             heroTag: 'signup_btn',
                             question: '已有账号？',
                             buttonPressed: () async {
-                              chooseType(
-                                      onPressed1: () {
-                                        _userType = 'student';
-                                        register(
-                                            _number,
-                                            _password,
-                                            _confirmPass,
-                                            _name,
-                                            _userType,
-                                            context);
+                              FocusManager.instance.primaryFocus?.unfocus();
+
+                              if (_confirmPass != _password) {
+                                showAlert(
+                                    context: context,
+                                    title: '密码不匹配',
+                                    desc: '请确认您输入的两次密码一致',
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                    }).show();
+                              } else {
+                                try {
+                                  await chooseType(
+                                          onPressed1: () {
+                                            _userType = 'student';
+                                            Navigator.of(context).pop();
+                                          },
+                                          onPressed2: () {
+                                            _userType = 'teacher';
+                                            Navigator.of(context).pop();
+                                          },
+                                          title: '用户类型',
+                                          desc: '请选择您的用户类型',
+                                          btnText1: '学生',
+                                          btnText2: '教师',
+                                          context: context)
+                                      .show()
+                                      .then((_) {
+                                    setState(() {
+                                      _saving = true;
+                                    });
+                                    register(_userType, context);
+                                  });
+
+                                  if (context.mounted) {
+                                    signUpAlert(
+                                      context: context,
+                                      title: '注册成功',
+                                      desc: '现在即可登录',
+                                      btnText: '立即登录',
+                                      onPressed: () {
+                                        setState(() {
+                                          _saving = false;
+                                          Navigator.popAndPushNamed(
+                                              context, SignUpScreen.id);
+                                        });
+                                        Navigator.pushNamed(
+                                            context, LoginScreen.id);
                                       },
-                                      onPressed2: () {
-                                        _userType = 'teacher';
-                                        register(
-                                            _number,
-                                            _password,
-                                            _confirmPass,
-                                            _name,
-                                            _userType,
-                                            context);
-                                      },
-                                      title: '用户类型',
-                                      desc: '请选择您的用户类型',
-                                      btnText1: '学生',
-                                      btnText2: '教师',
-                                      context: context)
-                                  .show();
+                                    ).show();
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    signUpAlert(
+                                        context: context,
+                                        title: '出错了',
+                                        desc: '网络错误，请稍后再试',
+                                        btnText: '关闭',
+                                        onPressed: () {
+                                          SystemNavigator.pop();
+                                        }).show();
+                                  }
+                                }
+                              }
                             },
                             questionPressed: () async {
                               Navigator.pushNamed(context, LoginScreen.id);
