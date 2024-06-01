@@ -10,7 +10,7 @@ Future<HandshakeStatus> sendHandshakeRequest() async {
         'http://${GlobalConfig.serverIpAddress}:${GlobalConfig.serverPort}/handshake');
     var response = await http
         .get(handshakeUri)
-        .timeout(const Duration(seconds: 2), onTimeout: () {
+        .timeout(const Duration(seconds: 5), onTimeout: () {
       return http.Response('timeout', 408);
     });
 
