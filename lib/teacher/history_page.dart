@@ -39,6 +39,7 @@ class HistoryPageState extends State<HistoryPage> {
       return -timeA.compareTo(timeB);
     });
     return Scaffold(
+      appBar: AppBar(title: const Text('签到历史')),
       body: records.isEmpty
           ? const Center(child: Text('没有历史记录'))
           : ListView.builder(

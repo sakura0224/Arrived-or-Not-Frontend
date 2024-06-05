@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../constants.dart';
 import 'package:rflutter_alert/rflutter_alert.dart';
-import '../../../global_config.dart';
+import '../../global_config.dart';
 
 class CustomButton extends StatelessWidget {
   const CustomButton(

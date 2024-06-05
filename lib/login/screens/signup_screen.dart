@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../components/components.dart';
-import '../screens/home_screen.dart';
-import '../screens/login_screen.dart';
+import 'home_screen.dart';
+import 'login_screen.dart';
 import '../constants.dart';
 import 'package:loading_overlay/loading_overlay.dart';
 import 'package:http/http.dart' as http;
-import '../../../global_config.dart';
-import '../../../functions/handshake.dart';
+import '../../global_config.dart';
+import '../../functions/handshake.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});

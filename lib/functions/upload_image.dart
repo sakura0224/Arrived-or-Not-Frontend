@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../global_config.dart';
 import 'package:path_provider/path_provider.dart';
-import '../pages/teacher/new_page.dart';
+import '../teacher/new_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // 上传图片

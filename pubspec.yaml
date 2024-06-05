@@ -49,6 +49,7 @@ dependencies:
   rflutter_alert: ^2.0.7
   firebase_core: ^2.30.0
   video_player: ^2.8.6
+  url_launcher: ^6.2.6
 
 dev_dependencies:
   flutter_test:
@@ -85,6 +86,9 @@ flutter:
     - assets/icon_foreground.png
     - assets/icon_app.png
     - assets/images/
+    - assets/banner/museum.png
+    - assets/banner/school.png
+    - assets/avatar.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
