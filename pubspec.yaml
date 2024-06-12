@@ -50,6 +50,9 @@ dependencies:
   firebase_core: ^2.30.0
   video_player: ^2.8.6
   url_launcher: ^6.2.6
+  image: 
+  flutter_webrtc: ^0.10.8
+  web_socket_channel: ^3.0.0
 
 dev_dependencies:
   flutter_test:

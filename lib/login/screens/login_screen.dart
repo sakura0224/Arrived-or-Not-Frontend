@@ -33,11 +33,17 @@ class _LoginScreenState extends State<LoginScreen> {
     if (status == HandshakeStatus.success) {
       try {
         var url = Uri.parse(
-            'http://${GlobalConfig.serverIpAddress}:${GlobalConfig.serverPort}/users/login');
-        var response = await http.post(url, body: {
-          'number': number,
-          'password': password,
-        });
+            'http://${GlobalConfig.serverIpAddress}:${GlobalConfig.serverPort}/login');
+        var response = await http.post(
+          url,
+          headers: {
+            'Content-Type': 'application/json', // 设置 Content-Type 请求头
+          },
+          body: jsonEncode({
+            'number': _number,
+            'password': _password,
+          }),
+        );
 
         if (response.statusCode == 200) {
           var result = jsonDecode(response.body); // 假设响应体中的令牌是在'token'键下

@@ -6,14 +6,14 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import '../state_notifier.dart';
 import '../functions/upload_image.dart';
 
-class CameraPage extends StatefulWidget {
-  const CameraPage({super.key});
+class Recognize extends StatefulWidget {
+  const Recognize({super.key});
 
   @override
-  CameraPageState createState() => CameraPageState();
+  RecognizeState createState() => RecognizeState();
 }
 
-class CameraPageState extends State<CameraPage> {
+class RecognizeState extends State<Recognize> {
   Future<void> getImage(StateNotifier imageNotifier) async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.camera);

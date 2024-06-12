@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../components/components.dart';
@@ -39,13 +40,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
       }
     } else {
       var url = Uri.parse(
-          'http://${GlobalConfig.serverIpAddress}:${GlobalConfig.serverPort}/users/register');
-      var response = await http.post(url, body: {
-        'number': _number,
-        'usertype': userType,
-        'name': _name,
-        'password': _password,
-      });
+          'http://${GlobalConfig.serverIpAddress}:${GlobalConfig.serverPort}/register');
+      var response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json', // 设置 Content-Type 请求头
+        },
+        body: jsonEncode({
+          'number': _number,
+          'usertype': userType,
+          'name': _name,
+          'password': _password,
+        }),
+      );
       if (response.statusCode != 201) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

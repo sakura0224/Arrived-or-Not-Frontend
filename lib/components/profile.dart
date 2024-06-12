@@ -74,11 +74,19 @@ class ProfilePage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('账户信息'),
       ),
-      body: const Center(
-        child: Text(
-          '占位符页面',
-          style: TextStyle(fontSize: 24),
-        ),
+      body: const Column(
+        children: <Widget>[
+          TextField(
+            decoration: InputDecoration(
+              labelText: '姓名',
+            ),
+          ),
+          TextField(
+            decoration: InputDecoration(
+              labelText: '学/工号',
+            ),
+          ),
+        ],
       ),
     );
   }

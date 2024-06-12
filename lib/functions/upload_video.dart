@@ -12,9 +12,10 @@ Future<void> uploadVideo(String videoPath, BuildContext context) async {
         'http://${GlobalConfig.serverIpAddress}:${GlobalConfig.serverPort}/video');
     var request = http.MultipartRequest('POST', uri)
       ..headers.addAll({
-        'Authorization': 'Bearer $token', // 添加 Authorization 头
+        'content_type': 'video/mp4', // 设置 Content-Type 请求头
+        'Authorization': 'Bearer $token' // 添加 Authorization 头
       })
-      ..files.add(await http.MultipartFile.fromPath('video', videoPath));
+      ..files.add(await http.MultipartFile.fromPath('file', videoPath));
 
     var response = await request.send();
 

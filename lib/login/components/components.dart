@@ -257,6 +257,7 @@ class SetIP extends StatefulWidget {
 class SetIPStatus extends State<SetIP> {
   String _ipAddress = '';
   String _port = '';
+  
   @override
   Widget build(BuildContext context) {
     return TextButton(
