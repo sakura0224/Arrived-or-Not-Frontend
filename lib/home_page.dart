@@ -1,3 +1,5 @@
+// 主页，包含横幅和应用区块
+
 import 'package:flutter/material.dart';
 import 'banner.dart'; // 引入横幅组件
 import 'app_section.dart'; // 引入应用区块组件

@@ -1,10 +1,12 @@
+// 教师端主页的功能模块
+
 import 'package:flutter/material.dart';
 import '../app_section.dart';
 import '../app_page.dart';
 import 'recognize.dart';
 import 'history_page.dart';
 import '../student/camera_page.dart';
-import 'fer.dart';
+import 'rtsp.dart';
 
 class TClassData extends AppData{
   @override
@@ -49,7 +51,7 @@ class TEduData extends AppData{
     '录入人脸',
     '考勤签到',
     '签到历史',
-    '表情识别'
+    '专注检测'
   ];
 
   @override
@@ -57,7 +59,7 @@ class TEduData extends AppData{
     const CameraPage(),
     const Recognize(),
     const HistoryPage(),
-    const FER()
+    const RtspScreen()
   ];
 }
 

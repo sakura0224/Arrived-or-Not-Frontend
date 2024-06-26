@@ -1,3 +1,5 @@
+// 学生端主页的功能模块
+
 import 'package:flutter/material.dart';
 import '../app_section.dart';
 import '../app_page.dart';

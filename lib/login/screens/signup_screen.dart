@@ -53,7 +53,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
           'password': _password,
         }),
       );
-      if (response.statusCode != 201) {
+      if (response.statusCode == 400) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(const SnackBar(content: Text('账户已存在，请直接登录')));
+          setState(() {
+            _saving = false;
+          });
+        }
+      } else if (response.statusCode != 201) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('注册失败: ${response.statusCode}')),

@@ -1,3 +1,5 @@
+// 应用区块的模板
+
 import 'package:flutter/material.dart';
 
 abstract class AppData {

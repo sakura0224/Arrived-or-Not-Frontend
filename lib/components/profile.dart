@@ -1,39 +1,22 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 
-class Avatar extends StatefulWidget {
-  const Avatar({super.key});
-
-  @override
-  AvatarStatus createState() => AvatarStatus();
-}
-
-class AvatarStatus extends State<Avatar> {
-  String name = '用户';
-  String number = '10000000';
-  String avatar = '';
-
-  @override
-  void initState() {
-    super.initState();
-    loadPreferences();
-  }
-
-  Future<void> loadPreferences() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      name = prefs.getString('name') ?? '用户';
-      number = prefs.getString('number') ?? '10000000';
-      avatar = prefs.getString('avatar') ?? '';
-    });
-  }
+class Avatar extends StatelessWidget {
+  final String name;
+  final String number;
+  final String avatar;
+  const Avatar(
+      {super.key,
+      required this.name,
+      required this.number,
+      required this.avatar});
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       leading: CircleAvatar(
-        foregroundImage: avatar.isNotEmpty ? MemoryImage(base64Decode(avatar)) : null,
+        foregroundImage:
+            avatar.isNotEmpty ? MemoryImage(base64Decode(avatar)) : null,
         backgroundImage: const AssetImage('assets/avatar.png'),
       ),
       title: Text(name),
@@ -42,14 +25,11 @@ class AvatarStatus extends State<Avatar> {
   }
 }
 
-class Profile extends StatefulWidget {
-  const Profile({super.key});
+class Profile extends StatelessWidget {
+  final String name;
+  final String number;
+  const Profile({super.key, required this.name, required this.number});
 
-  @override
-  ProfileStatus createState() => ProfileStatus();
-}
-
-class ProfileStatus extends State<Profile> {
   @override
   Widget build(BuildContext context) {
     return ListTile(
@@ -58,7 +38,8 @@ class ProfileStatus extends State<Profile> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const ProfilePage()),
+          MaterialPageRoute(
+              builder: (context) => ProfilePage(name: name, number: number)),
         );
       },
     );
@@ -66,10 +47,12 @@ class ProfileStatus extends State<Profile> {
 }
 
 class ProfilePage extends StatelessWidget {
-  const ProfilePage({super.key});
+  final String name;
+  final String number;
+  const ProfilePage({super.key, required this.name, required this.number});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) { 
     return Scaffold(
       appBar: AppBar(
         title: const Text('账户信息'),
@@ -80,11 +63,26 @@ class ProfilePage extends StatelessWidget {
             decoration: InputDecoration(
               labelText: '姓名',
             ),
+            enabled: false,
           ),
           TextField(
             decoration: InputDecoration(
               labelText: '学/工号',
+              // helperText: name,
             ),
+            enabled: false,
+          ),
+          TextField(
+            decoration: InputDecoration(
+              labelText: '当前密码',
+            ),
+            obscureText: true,
+          ),
+          TextField(
+            decoration: InputDecoration(
+              labelText: '重置密码',
+            ),
+            obscureText: true,
           ),
         ],
       ),

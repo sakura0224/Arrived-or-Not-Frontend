@@ -1,3 +1,5 @@
+// 项目入口
+
 import 'package:daomeidao/root.dart';
 import 'package:flutter/material.dart';
 import 'login/screens/home_screen.dart';
