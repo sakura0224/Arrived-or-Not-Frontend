@@ -6,11 +6,7 @@
 
 ## 参与开发
 
-git clone项目到本地，在你想要开发的文件夹中使用命令
-
-`git clone https://github.com/sakura0224/daomeidao.git`
-
-完成项目拉取后，将你的github邮箱发给我，通知我将你加入到Collaborators中，然后就可以协作开发了
+在Github上Fork本项目后，clone到本地，自行完成开发。
 
 ## 注意事项
 
