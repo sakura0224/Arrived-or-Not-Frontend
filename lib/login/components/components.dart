@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../constants.dart';
 import 'package:rflutter_alert/rflutter_alert.dart';
-import '../../../global_config.dart';
+import '../../global_config.dart';
 
 class CustomButton extends StatelessWidget {
   const CustomButton(
@@ -257,6 +257,7 @@ class SetIP extends StatefulWidget {
 class SetIPStatus extends State<SetIP> {
   String _ipAddress = '';
   String _port = '';
+  
   @override
   Widget build(BuildContext context) {
     return TextButton(

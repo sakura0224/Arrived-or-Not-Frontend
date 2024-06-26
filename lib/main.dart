@@ -1,18 +1,26 @@
+// 项目入口
+
+import 'package:daomeidao/root.dart';
 import 'package:flutter/material.dart';
-import 'pages/login/screens/home_screen.dart';
-import 'pages/login/screens/login_screen.dart';
-import 'pages/login/screens/signup_screen.dart';
+import 'login/screens/home_screen.dart';
+import 'login/screens/login_screen.dart';
+import 'login/screens/signup_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'pages/teacher/root.dart';
-import 'pages/student/root.dart';
 import 'global_config.dart';
+import 'state_notifier.dart';
+import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GlobalConfig.loadServerSettings();
   SharedPreferences prefs = await SharedPreferences.getInstance();
   final String? userType = prefs.getString('userType');
-  runApp(MyApp(userType: userType));
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => StateNotifier(),
+      child: MyApp(userType: userType),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -22,19 +30,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      // theme: ThemeData(
-      //     textTheme: const TextTheme(
-      //   bodyMedium: TextStyle(
-      //     fontFamily: 'Ubuntu',
-      //   ),
-      // )),
-      home: userType == null
-          ? const HomeScreen()
-          : userType == 'teacher'
-              ? const TeaApp()
-              : userType == 'student'
-                  ? const StuApp()
-                  : const HomeScreen(),
+      home: userType == null ? const HomeScreen() : Root(userType: userType),
       routes: {
         HomeScreen.id: (context) => const HomeScreen(),
         LoginScreen.id: (context) => const LoginScreen(),

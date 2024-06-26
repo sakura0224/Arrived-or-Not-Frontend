@@ -1,21 +1,19 @@
-import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 
 class StateNotifier extends ChangeNotifier {
-  XFile? _image; // image_picker返回的图片
-  bool _isLoading = false; // 是否正在加载
+  XFile? _image;
+  bool _isLoading = false;
 
   XFile? get image => _image;
   bool get isLoading => _isLoading;
 
   void setImage(XFile image) {
-    // 设置图片
     _image = image;
     notifyListeners();
   }
 
-  set isLoading(bool isLoading) {
-    // 设置加载状态
+  void setLoading(bool isLoading) {
     _isLoading = isLoading;
     notifyListeners();
   }

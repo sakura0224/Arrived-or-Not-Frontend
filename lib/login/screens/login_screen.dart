@@ -1,13 +1,12 @@
-import 'package:daomeidao/pages/student/root.dart';
-import 'package:daomeidao/pages/teacher/root.dart';
+import '../../root.dart';
 import 'package:flutter/material.dart';
 import '../components/components.dart';
 import '../constants.dart';
 import 'package:loading_overlay/loading_overlay.dart';
-import '../screens/home_screen.dart';
+import 'home_screen.dart';
 import 'package:http/http.dart' as http;
-import '../../../global_config.dart';
-import '../../../functions/handshake.dart';
+import '../../global_config.dart';
+import '../../functions/handshake.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
@@ -34,33 +33,36 @@ class _LoginScreenState extends State<LoginScreen> {
     if (status == HandshakeStatus.success) {
       try {
         var url = Uri.parse(
-            'http://${GlobalConfig.serverIpAddress}:${GlobalConfig.serverPort}/users/login');
-        var response = await http.post(url, body: {
-          'number': number,
-          'password': password,
-        });
+            'http://${GlobalConfig.serverIpAddress}:${GlobalConfig.serverPort}/login');
+        var response = await http.post(
+          url,
+          headers: {
+            'Content-Type': 'application/json', // 设置 Content-Type 请求头
+          },
+          body: jsonEncode({
+            'number': _number,
+            'password': _password,
+          }),
+        );
 
         if (response.statusCode == 200) {
           var result = jsonDecode(response.body); // 假设响应体中的令牌是在'token'键下
           var token = result['token'];
           var userType = result['usertype'];
+          var name = result['name'];
           // 保存令牌到shared_preferences
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('jwtToken', token);
           await prefs.setString('userType', userType);
+          await prefs.setString('number', number);
+          await prefs.setString('name', name);
           setState(() {
             _saving = false;
-            if (userType == 'student') {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const StuApp()),
-              );
-            } else if (userType == 'teacher') {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const TeaApp()),
-              );
-            }
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => Root(userType: userType)),
+              (route) => false, // 这将会清空导航栈
+            );
           });
         } else {
           if (response.statusCode == 401 && context.mounted) {
