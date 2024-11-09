@@ -1,17 +1,22 @@
-# 到没到
+# Arrived or Not Frontend
 
-使用flutter框架开发的一款拍照识别系统
+[中文](https://github.com/sakura0224/Arrived-or-Not-Frontend/README_cn.md])
 
-上海大学大创项目
+A photo recognition system developed using the Flutter framework.
 
-## 参与开发
+Shanghai University Innovation Project
 
-在GitHub上Fork本项目后，自行完成开发。
+## Participation in Development
 
-## 注意事项
+Fork this project on GitHub and proceed with independent development.
 
-1. 务必请先于dev分支中开发，代码开发完成后测试无误后再合并到main分支
-2. lib/下的文件夹是项目的主要文件夹，其中main.dart是项目的入口文件
-3. 请先参照flutter教程配置好flutter的开发环境，例如安装好flutter和dart插件，配置好flutter的环境变量以及android studio与vscode的安装等等
-4. 更多关于flutter的开发请参考[flutter中文网](https://flutterchina.club/get-started/install/)
-5. 关于git的使用请参考[廖雪峰的git教程](https://www.liaoxuefeng.com/wiki/896043488029600)
+## Important Notes
+
+1. Configure the Flutter development environment by following the Flutter tutorial. For example, install the Flutter and Dart plugins, set the Flutter environment variables, and install Android Studio and VS Code.
+2. Use `flutter doctor` to check if the environment is correctly configured.
+3. Before running, execute the command `flutter pub get` to install project dependencies.
+4. The `lib/` folder is the main folder for the project, with `main.dart` as the entry file.
+5. Remember to modify the `storeFile` path in `android/key.properties`.
+6. It's recommended to study Flutter tutorials, such as [Flutter Chinese](https://flutterchina.club/get-started/install/).
+7. For Git usage, refer to [Liao Xuefeng's Git Tutorial](https://www.liaoxuefeng.com/wiki/896043488029600).
+8. Due to the variety of personal computer environments, issues might arise.
